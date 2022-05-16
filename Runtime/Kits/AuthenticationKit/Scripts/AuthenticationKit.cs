@@ -115,13 +115,21 @@ namespace MoralisUnity.Kits.AuthenticationKit
 
         async void OnApplicationFocus(bool hasFocus)
         {
+            Debug.Log("Start onApplicationFocus 1");
             isPaused = !hasFocus;
 #if UNITY_ANDROID || UNITY_IOS
+            // On Android and IOS when the user opens the wallet cancel the tasks and "Reset" the cancellation token source
+            Debug.Log("Cancel onApplicationFocus event 1");
+            onApplicationFocusCancelSource.Cancel();
+            onApplicationFocusCancelSource.Dispose(); 
+            onApplicationFocusCancelSource = new CancellationTokenSource();
+            
             // On Android and IOS when the user returns to the app after connecting check if the state changes after 30 seconds   
             // If not assume it has failed and restart the connection
             if (AuthenticationKitState.Connecting.Equals(State))
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(30), cancellationToken: onApplicationFocusCancelSource.Token)
+                Debug.Log("Start onApplicationFocus 2");
+                await UniTask.Delay(TimeSpan.FromSeconds(15), cancellationToken: onApplicationFocusCancelSource.Token)
                     .ContinueWith(
                         () =>
                         {
@@ -136,7 +144,8 @@ namespace MoralisUnity.Kits.AuthenticationKit
             // If not assume it has failed and restart the connection
             if (AuthenticationKitState.Signing.Equals(State))
             {
-                await UniTask.Delay(TimeSpan.FromSeconds(30), cancellationToken: onApplicationFocusCancelSource.Token)
+                Debug.Log("Start onApplicationFocus 3");
+                await UniTask.Delay(TimeSpan.FromSeconds(15), cancellationToken: onApplicationFocusCancelSource.Token)
                     .ContinueWith(
                         () =>
                         {
@@ -152,12 +161,6 @@ namespace MoralisUnity.Kits.AuthenticationKit
         void OnApplicationPause(bool pauseStatus)
         {
             isPaused = pauseStatus;
-#if UNITY_ANDROID || UNITY_IOS
-            // On Android and IOS when the user opens the wallet cancel the tasks and "Reset" the cancellation token source
-            onApplicationFocusCancelSource.Cancel();
-            onApplicationFocusCancelSource.Dispose(); 
-            onApplicationFocusCancelSource = new CancellationTokenSource();
-#endif
         }
 
         /// <summary>
@@ -508,7 +511,9 @@ namespace MoralisUnity.Kits.AuthenticationKit
 
 #if UNITY_ANDROID || UNITY_IOS
             // On Android and iOS if the state changes cancel the onApplicationFocus Task
+            Debug.Log("Cancel onApplicationFocus event 2");
             onApplicationFocusCancelSource.Cancel();
+            onApplicationFocusCancelSource.Dispose(); 
 #endif
         }
     }
