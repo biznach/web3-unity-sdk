@@ -240,8 +240,57 @@ namespace MoralisUnity.Kits.AuthenticationKit
         /// <returns></returns>
         public async void WalletConnect_OnConnectedEventSession(WCSessionData wcSessionData)
         {
-            //Debug.Log($"WalletConnect_OnConnectedEventSession() wcSessionData = {wcSessionData}");
 
+        }
+
+        // If the user cancels the connect Disconnect and start over
+        public async void WalletConnect_OnDisconnectedEvent(WalletConnectUnitySession session)
+        {
+            // Debug.Log("WalletConnect_OnDisconnectedEvent");
+
+            // Only run if we are not already disconnecting
+            if (!AuthenticationKitState.Disconnecting.Equals(State))
+            {
+                Disconnect();
+            }
+        }
+
+        // If something goes wrong Disconnect and start over
+        public async void WalletConnect_OnConnectionFailedEvent(WalletConnectUnitySession session)
+        {
+            // Debug.Log("WalletConnect_OnConnectionFailedEvent");
+
+            // Only run if we are not already disconnecting
+            if (!AuthenticationKitState.Disconnecting.Equals(State))
+            {
+                Disconnect();
+            }
+        }
+
+        // If there is a new WalletConnect session setup Web3
+        public async void WalletConnect_OnNewSessionConnected(WalletConnectUnitySession session)
+        {
+            // Debug.Log("WalletConnect_OnNewSessionConnected");
+            await HandleSessionConnected(session);
+            await Moralis.SetupWeb3();
+        }
+
+        // If there is a resumed WalletConnect session setup Web3
+        public async void WalletConnect_OnResumedSessionConnected(WalletConnectUnitySession session)
+        {
+            // Debug.Log("WalletConnect_OnResumedSessionConnected");
+            await HandleSessionConnected(session);
+            await Moralis.SetupWeb3();
+        }
+
+        /// <summary>
+        /// Handles when <see cref="WalletConnect"/> is connected.
+        /// Here the local scope will start and finish the signing process.
+        /// </summary>
+        /// <param name="session"></param>
+        /// <returns></returns>
+        private async UniTask HandleSessionConnected(WalletConnectUnitySession session)
+        {
             // WalletConnect can resume a session and trigger this event on start
             // So double check if we already go a user and are connected
             if (await Moralis.GetUserAsync() != null)
@@ -253,7 +302,7 @@ namespace MoralisUnity.Kits.AuthenticationKit
             State = AuthenticationKitState.Signing;
 
             // Extract wallet address from the Wallet Connect Session data object.
-            string address = wcSessionData.accounts[0].ToLower();
+            string address = session.Accounts[0].ToLower(); //wcSessionData.accounts[0].ToLower();
             string appId = Moralis.DappId;
             long serverTime = 0;
 
@@ -292,52 +341,12 @@ namespace MoralisUnity.Kits.AuthenticationKit
             };
 
             // Attempt to login user.
-            MoralisUser user = await Moralis.LogInAsync(authData, wcSessionData.chainId.Value);
+            MoralisUser user = await Moralis.LogInAsync(authData, session.ChainId);
 
             if (user != null)
             {
                 State = AuthenticationKitState.Connected;
             }
-        }
-
-        // If the user cancels the connect Disconnect and start over
-        public async void WalletConnect_OnDisconnectedEvent(WalletConnectUnitySession session)
-        {
-            // Debug.Log("WalletConnect_OnDisconnectedEvent");
-
-            // Only run if we are not already disconnecting
-            if (!AuthenticationKitState.Disconnecting.Equals(State))
-            {
-                Disconnect();
-            }
-        }
-
-        // If something goes wrong Disconnect and start over
-        public async void WalletConnect_OnConnectionFailedEvent(WalletConnectUnitySession session)
-        {
-            // Debug.Log("WalletConnect_OnConnectionFailedEvent");
-
-            // Only run if we are not already disconnecting
-            if (!AuthenticationKitState.Disconnecting.Equals(State))
-            {
-                Disconnect();
-            }
-        }
-
-        // If there is a new WalletConnect session setup Web3
-        public async void WalletConnect_OnNewSessionConnected(WalletConnectUnitySession session)
-        {
-            // Debug.Log("WalletConnect_OnNewSessionConnected");
-
-            await Moralis.SetupWeb3();
-        }
-
-        // If there is a resumed WalletConnect session setup Web3
-        public async void WalletConnect_OnResumedSessionConnected(WalletConnectUnitySession session)
-        {
-            // Debug.Log("WalletConnect_OnResumedSessionConnected");
-
-            await Moralis.SetupWeb3();
         }
 
         /// <summary>
